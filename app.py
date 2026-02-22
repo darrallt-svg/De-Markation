@@ -16,6 +16,7 @@ CANVAS_BASE_URL = os.getenv("CANVAS_BASE_URL", "").rstrip("/")
 CANVAS_TOKEN = os.getenv("CANVAS_TOKEN", "")
 PORT = int(os.getenv("PORT", "5000"))
 DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
+DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
 
 CRITERIA_CONFIG_PATH = Path("config/criteria.json")
 GROUPING_MODELS_PATH = Path("Criteria Grouping Models")
@@ -284,4 +285,4 @@ def publish_grade():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True, port=PORT)
+    app.run(host="0.0.0.0", debug=DEBUG_MODE, port=PORT)

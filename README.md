@@ -60,6 +60,25 @@ Or use one command:
 bash scripts/run_capri_demo.sh
 ```
 
+## Render deployment (free hosting)
+
+Use these values in Render:
+
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `gunicorn app:app --bind 0.0.0.0:$PORT`
+
+Required env vars:
+
+- `PORT=10000`
+- `DEMO_MODE=true` for first deploy check
+- `DEBUG_MODE=false`
+
+For live Canvas testing later:
+
+- `DEMO_MODE=false`
+- `CANVAS_BASE_URL=https://your-school.instructure.com`
+- `CANVAS_TOKEN=your_token`
+
 ## Criteria editing
 
 Edit `config/criteria.json` to change criteria, domains, and weights.
