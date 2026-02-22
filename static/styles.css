@@ -1,0 +1,178 @@
+:root {
+  --bg: #f4efe6;
+  --panel: #fff9f1;
+  --text: #1c1c1c;
+  --muted: #59524a;
+  --border: #d5c5b2;
+  --accent: #2f6e5f;
+  --accent-soft: #d8ece6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Avenir Next", "Gill Sans", sans-serif;
+  background: radial-gradient(circle at 20% 0%, #fff6df, var(--bg) 45%);
+  color: var(--text);
+}
+
+.app-shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+
+h1, h2, h3 {
+  margin: 0;
+}
+
+h4 {
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin-top: 0.4rem;
+}
+
+.mode-note {
+  margin-top: 0.3rem;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+label {
+  display: block;
+  font-size: 0.95rem;
+}
+
+select,
+textarea,
+button,
+input[type="range"] {
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+select,
+textarea,
+button {
+  font: inherit;
+  padding: 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+button {
+  background: var(--accent);
+  color: white;
+  border: 0;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+button + button {
+  margin-top: 0.6rem;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.criteria-panel {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.domain-section {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #fffefc;
+}
+
+.domain-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+.domain-score {
+  color: var(--accent);
+}
+
+.criterion-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: white;
+}
+
+.criterion-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.criterion-head p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.domain-chip {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  height: fit-content;
+  font-size: 0.82rem;
+}
+
+.total-box {
+  margin-top: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 0.6rem;
+}
+
+.total-box p {
+  font-size: 1.4rem;
+  margin: 0.6rem 0 0;
+}
+
+.domain-summary {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.7rem;
+}
+
+.summary-row {
+  margin: 0.3rem 0;
+}
+
+.status {
+  color: var(--muted);
+  min-height: 1.4em;
+}

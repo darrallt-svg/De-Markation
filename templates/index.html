@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>De-Markation MVP</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header>
+      <h1>De-Markation MVP</h1>
+      <p class="subtitle">Simple criterion-first marking with optional Canvas grade pushback.</p>
+      <p class="mode-note">
+        Mode:
+        <strong>{% if demo_mode %}Demo{% else %}Canvas{% endif %}</strong>
+      </p>
+    </header>
+
+    <section class="card">
+      <h2>0. Optional: Choose Criteria Grouping Model</h2>
+      <div class="grid">
+        <label>
+          Model
+          <select id="modelSelect">
+            <option value="">Current model from config</option>
+          </select>
+        </label>
+      </div>
+      <button id="activateModelBtn" type="button">Activate Selected Model</button>
+      <p id="modelStatus" class="status"></p>
+    </section>
+
+    <section class="card">
+      <h2>1. Choose Course, Assignment, Student</h2>
+      <p id="connectionText" class="status"></p>
+      <div class="grid">
+        <label>
+          Course
+          <select id="courseSelect"></select>
+        </label>
+
+        <label>
+          Assignment
+          <select id="assignmentSelect"></select>
+        </label>
+
+        <label>
+          Student
+          <select id="studentSelect"></select>
+        </label>
+      </div>
+      <p id="statusText" class="status"></p>
+    </section>
+
+    <section class="card">
+      <h2>2. Mark by Criteria</h2>
+      <div id="criteriaPanel" class="criteria-panel">
+        {% for block in grouped %}
+        <section class="domain-section">
+          <div class="domain-head">
+            <h3>{{ block.domain }}</h3>
+            <strong class="domain-score" data-domain-score="{{ block.domain }}">0%</strong>
+          </div>
+          {% for c in block.criteria %}
+          <article class="criterion-item" data-criterion-id="{{ c.id }}" data-max-score="{{ c.max_score }}" data-weight="{{ c.weight }}" data-domain="{{ c.domain }}">
+            <div class="criterion-head">
+              <div>
+                <h4>{{ c.title }}</h4>
+                <p>{{ c.description }}</p>
+              </div>
+              <span class="domain-chip">{{ c.domain }}</span>
+            </div>
+            <label>
+              Score: <span class="score-readout">0</span> / {{ c.max_score }}
+              <input class="score-slider" type="range" min="0" max="{{ c.max_score }}" step="0.5" value="0" />
+            </label>
+          </article>
+          {% endfor %}
+        </section>
+        {% endfor %}
+      </div>
+
+      <details class="total-box">
+        <summary>Total (Hidden by default)</summary>
+        <p id="totalText">0</p>
+      </details>
+
+      <section class="domain-summary">
+        <h3>Domain Summary</h3>
+        <div id="domainSummaryRows"></div>
+      </section>
+
+      <label>
+        Optional feedback for student
+        <textarea id="feedbackText" rows="4" placeholder="Add a short comment..."></textarea>
+      </label>
+
+      <button id="publishBtn">Send Grade</button>
+      <button id="exportCsvBtn" type="button">Export Marking CSV</button>
+      <p id="publishStatus" class="status"></p>
+    </section>
+  </main>
+
+  <script>
+    const criteriaItems = [...document.querySelectorAll('.criterion-item')];
+    const courseSelect = document.getElementById('courseSelect');
+    const assignmentSelect = document.getElementById('assignmentSelect');
+    const studentSelect = document.getElementById('studentSelect');
+    const totalText = document.getElementById('totalText');
+    const statusText = document.getElementById('statusText');
+    const connectionText = document.getElementById('connectionText');
+    const publishBtn = document.getElementById('publishBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const publishStatus = document.getElementById('publishStatus');
+    const modelSelect = document.getElementById('modelSelect');
+    const activateModelBtn = document.getElementById('activateModelBtn');
+    const modelStatus = document.getElementById('modelStatus');
+    const domainSummaryRows = document.getElementById('domainSummaryRows');
+
+    const state = {
+      courses: [],
+      assignments: [],
+      students: []
+    };
+
+    async function fetchJSON(url, options = {}) {
+      const response = await fetch(url, options);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Request failed');
+      }
+      return data;
+    }
+
+    async function loadConnectionStatus() {
+      try {
+        const result = await fetchJSON('/api/connection');
+        connectionText.textContent = result.message;
+      } catch (error) {
+        connectionText.textContent = error.message;
+      }
+    }
+
+    function fillSelect(select, options, emptyLabel) {
+      select.innerHTML = '';
+      if (!options.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = emptyLabel;
+        select.appendChild(opt);
+        return;
+      }
+      for (const item of options) {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = item.name;
+        select.appendChild(opt);
+      }
+    }
+
+    function currentTotal() {
+      let weightedSum = 0;
+      let totalWeight = 0;
+      for (const item of criteriaItems) {
+        const slider = item.querySelector('.score-slider');
+        const maxScore = Number(item.dataset.maxScore);
+        const weight = Number(item.dataset.weight);
+        const score = Number(slider.value);
+        weightedSum += (score / maxScore) * weight;
+        totalWeight += weight;
+      }
+      const percent = totalWeight > 0 ? (weightedSum / totalWeight) * 100 : 0;
+      return Math.round(percent * 10) / 10;
+    }
+
+    function domainTotals() {
+      const byDomain = {};
+      for (const item of criteriaItems) {
+        const domain = item.dataset.domain;
+        const slider = item.querySelector('.score-slider');
+        const maxScore = Number(item.dataset.maxScore);
+        const score = Number(slider.value);
+
+        if (!byDomain[domain]) {
+          byDomain[domain] = { score: 0, max: 0 };
+        }
+        byDomain[domain].score += score;
+        byDomain[domain].max += maxScore;
+      }
+      return byDomain;
+    }
+
+    function renderDomainSummary() {
+      const domains = domainTotals();
+      const rows = Object.entries(domains).map(([domain, totals]) => {
+        const percent = totals.max > 0 ? Math.round((totals.score / totals.max) * 1000) / 10 : 0;
+        return { domain, percent };
+      });
+
+      domainSummaryRows.innerHTML = '';
+      for (const row of rows) {
+        const el = document.createElement('p');
+        el.className = 'summary-row';
+        el.textContent = `${row.domain}: ${row.percent}%`;
+        domainSummaryRows.appendChild(el);
+
+        const scoreTag = document.querySelector(`[data-domain-score="${CSS.escape(row.domain)}"]`);
+        if (scoreTag) {
+          scoreTag.textContent = `${row.percent}%`;
+        }
+      }
+    }
+
+    function wireSliders() {
+      for (const item of criteriaItems) {
+        const slider = item.querySelector('.score-slider');
+        const readout = item.querySelector('.score-readout');
+        slider.addEventListener('input', () => {
+          readout.textContent = slider.value;
+          totalText.textContent = `${currentTotal()}%`;
+          renderDomainSummary();
+        });
+      }
+      totalText.textContent = `${currentTotal()}%`;
+      renderDomainSummary();
+    }
+
+    function csvSafe(value) {
+      const text = String(value ?? '');
+      if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+        return `"${text.replaceAll('"', '""')}"`;
+      }
+      return text;
+    }
+
+    function downloadCsv() {
+      const selectedCourse = courseSelect.options[courseSelect.selectedIndex]?.text || '';
+      const selectedAssignment = assignmentSelect.options[assignmentSelect.selectedIndex]?.text || '';
+      const selectedStudent = studentSelect.options[studentSelect.selectedIndex]?.text || '';
+      const total = `${currentTotal()}%`;
+      const rows = [
+        ['Course', selectedCourse],
+        ['Assignment', selectedAssignment],
+        ['Student', selectedStudent],
+        ['Total', total],
+        [''],
+        ['Domain', 'Criterion', 'Score', 'Max Score', 'Percent']
+      ];
+
+      for (const item of criteriaItems) {
+        const domain = item.dataset.domain;
+        const title = item.querySelector('h4')?.textContent || '';
+        const slider = item.querySelector('.score-slider');
+        const score = Number(slider.value);
+        const max = Number(item.dataset.maxScore);
+        const percent = max > 0 ? Math.round((score / max) * 1000) / 10 : 0;
+        rows.push([domain, title, score, max, `${percent}%`]);
+      }
+
+      const csv = rows.map((row) => row.map(csvSafe).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'de-markation-marking.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function loadModels() {
+      const models = await fetchJSON('/api/models');
+      for (const model of models) {
+        const opt = document.createElement('option');
+        opt.value = model.id;
+        opt.textContent = model.name;
+        modelSelect.appendChild(opt);
+      }
+    }
+
+    async function activateModel() {
+      const modelId = modelSelect.value;
+      if (!modelId) {
+        modelStatus.textContent = 'Select a model first.';
+        return;
+      }
+      activateModelBtn.disabled = true;
+      modelStatus.textContent = 'Activating model...';
+      try {
+        const result = await fetchJSON(`/api/models/${encodeURIComponent(modelId)}/activate`, {
+          method: 'POST'
+        });
+        modelStatus.textContent = `${result.message} Reloading...`;
+        window.location.reload();
+      } catch (error) {
+        modelStatus.textContent = error.message;
+      } finally {
+        activateModelBtn.disabled = false;
+      }
+    }
+
+    async function loadCourses() {
+      statusText.textContent = 'Loading courses...';
+      state.courses = await fetchJSON('/api/courses');
+      fillSelect(courseSelect, state.courses, 'No courses found');
+      statusText.textContent = state.courses.length ? '' : 'No courses available.';
+      await loadAssignments();
+    }
+
+    async function loadAssignments() {
+      const courseId = courseSelect.value;
+      if (!courseId) {
+        fillSelect(assignmentSelect, [], 'Select a course first');
+        fillSelect(studentSelect, [], 'Select an assignment first');
+        return;
+      }
+      state.assignments = await fetchJSON(`/api/courses/${courseId}/assignments`);
+      fillSelect(assignmentSelect, state.assignments, 'No assignments found');
+      await loadStudents();
+    }
+
+    async function loadStudents() {
+      const courseId = courseSelect.value;
+      const assignmentId = assignmentSelect.value;
+      if (!courseId || !assignmentId) {
+        fillSelect(studentSelect, [], 'Select an assignment first');
+        return;
+      }
+      state.students = await fetchJSON(`/api/courses/${courseId}/assignments/${assignmentId}/students`);
+      fillSelect(studentSelect, state.students, 'No students found');
+    }
+
+    async function publishGrade() {
+      const courseId = courseSelect.value;
+      const assignmentId = assignmentSelect.value;
+      const studentId = studentSelect.value;
+      if (!courseId || !assignmentId || !studentId) {
+        publishStatus.textContent = 'Select course, assignment, and student first.';
+        return;
+      }
+
+      publishStatus.textContent = 'Publishing...';
+      publishBtn.disabled = true;
+
+      try {
+        const grade = currentTotal();
+        await fetchJSON('/api/publish-grade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            course_id: Number(courseId),
+            assignment_id: Number(assignmentId),
+            student_id: Number(studentId),
+            grade,
+            comment: document.getElementById('feedbackText').value
+          })
+        });
+        publishStatus.textContent = `Sent ${grade}% successfully.`;
+      } catch (error) {
+        publishStatus.textContent = error.message;
+      } finally {
+        publishBtn.disabled = false;
+      }
+    }
+
+    courseSelect.addEventListener('change', loadAssignments);
+    assignmentSelect.addEventListener('change', loadStudents);
+    publishBtn.addEventListener('click', publishGrade);
+    exportCsvBtn.addEventListener('click', downloadCsv);
+    activateModelBtn.addEventListener('click', activateModel);
+
+    wireSliders();
+    loadModels().catch((error) => {
+      modelStatus.textContent = error.message;
+    });
+    loadConnectionStatus();
+    loadCourses().catch((error) => {
+      statusText.textContent = error.message;
+    });
+  </script>
+</body>
+</html>

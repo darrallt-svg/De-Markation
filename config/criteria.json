@@ -1,0 +1,36 @@
+{
+  "criteria": [
+    {
+      "id": "clarity",
+      "title": "Clarity",
+      "domain": "Communication",
+      "description": "Ideas are clearly expressed and easy to follow.",
+      "max_score": 5,
+      "weight": 1
+    },
+    {
+      "id": "evidence",
+      "title": "Use of Evidence",
+      "domain": "Reasoning",
+      "description": "Claims are supported with relevant evidence.",
+      "max_score": 5,
+      "weight": 1
+    },
+    {
+      "id": "application",
+      "title": "Application",
+      "domain": "Practice",
+      "description": "Concepts are applied accurately in context.",
+      "max_score": 5,
+      "weight": 1
+    },
+    {
+      "id": "reflection",
+      "title": "Reflection",
+      "domain": "Growth",
+      "description": "Student reflects thoughtfully on choices and improvements.",
+      "max_score": 5,
+      "weight": 1
+    }
+  ]
+}

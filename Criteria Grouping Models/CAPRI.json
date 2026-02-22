@@ -1,0 +1,55 @@
+{
+  "model": {
+    "name": "CAPRI",
+    "description": "Optional criteria grouping framework. Users can adopt this model or use any alternative.",
+    "mnemonic": {
+      "C": "Communication and Collaboration",
+      "A": "Attitudes and Values",
+      "P": "Practical and Organisational Skills",
+      "R": "Research and Critical Thinking",
+      "I": "Innovation and Creativity"
+    }
+  },
+  "criteria": [
+    {
+      "id": "communication_collaboration",
+      "title": "Communication and Collaboration",
+      "domain": "Communication and Collaboration",
+      "description": "Shares ideas clearly and works effectively with others.",
+      "max_score": 5,
+      "weight": 1
+    },
+    {
+      "id": "attitudes_values",
+      "title": "Attitudes and Values",
+      "domain": "Attitudes and Values",
+      "description": "Demonstrates respectful, ethical, and growth-oriented behaviors.",
+      "max_score": 5,
+      "weight": 1
+    },
+    {
+      "id": "practical_organisational_skills",
+      "title": "Practical and Organisational Skills",
+      "domain": "Practical and Organisational Skills",
+      "description": "Plans work, manages time, and executes tasks reliably.",
+      "max_score": 5,
+      "weight": 1
+    },
+    {
+      "id": "research_critical_thinking",
+      "title": "Research and Critical Thinking",
+      "domain": "Research and Critical Thinking",
+      "description": "Investigates sources and evaluates ideas with sound reasoning.",
+      "max_score": 5,
+      "weight": 1
+    },
+    {
+      "id": "innovation_creativity",
+      "title": "Innovation and Creativity",
+      "domain": "Innovation and Creativity",
+      "description": "Generates original ideas and applies creative solutions.",
+      "max_score": 5,
+      "weight": 1
+    }
+  ]
+}
